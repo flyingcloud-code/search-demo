@@ -4,8 +4,8 @@ import time
 import random
 from datetime import datetime
 import arxiv
-# 移除 wikipediaapi 导入，使用 wikipedia 库代替
-# import wikipediaapi
+# 导入wikipedia库
+import wikipedia
 from duckduckgo_search import DDGS
 from googlesearch import search as google_search  # Google 搜索库
 import re
@@ -36,7 +36,7 @@ def classify_query(query):
         return "knowledge"
     elif any(k in query for k in ["best", "recommend", "laptop", "server", "product"]):
         return "product"
-    elif any(k in query for k in ["policy", "tariff", "news", "latest"]):
+    elif any(k in query for k in ["policy", "tariff", "news", "latest", "regulations", "changes", "trade"]):
         return "policy"
     return "general"
 
@@ -68,25 +68,22 @@ def search_arxiv(query, max_results=5, verbose=False):
             print(f"[arXiv] 详细错误信息: {str(e)}")
         return []
 
+
+
 def search_wikipedia(query, max_results=5, verbose=False):
     """使用 wikipedia 库搜索"""
     if verbose:
         print(f"\n[Wikipedia] 开始搜索: {query}")
         print(f"[Wikipedia] 参数: max_results={max_results}")
     try:
-        # 使用wikipedia库进行搜索
-        try:
-            import wikipedia
-            wikipedia.set_lang('en')
-            if verbose:
-                print(f"[Wikipedia] 使用wikipedia库搜索: {query}")
-            # 使用wikipedia.search方法获取搜索结果
-            search_results = wikipedia.search(query, results=max_results)
-            if verbose:
-                print(f"[Wikipedia] 搜索结果数量: {len(search_results)}")
-        except ImportError:
-            print(f"Wikipedia 库导入错误，请安装: pip install wikipedia")
-            return []
+        # 设置Wikipedia语言
+        wikipedia.set_lang('en')
+        if verbose:
+            print(f"[Wikipedia] 使用wikipedia库搜索: {query}")
+        # 使用wikipedia.search方法获取搜索结果
+        search_results = wikipedia.search(query, results=max_results)
+        if verbose:
+            print(f"[Wikipedia] 搜索结果数量: {len(search_results)}")
         
         results = []
         if verbose:
@@ -112,15 +109,17 @@ def search_wikipedia(query, max_results=5, verbose=False):
                 # 尝试使用第一个选项
                 if e.options:
                     try:
-                        page = wikipedia.page(e.options[0])
+                        first_option = e.options[0]
+                        page = wikipedia.page(first_option)
                         results.append({
                             "source": "Wikipedia",
-                            "title": page.title,
+                            "title": first_option,
                             "link": page.url,
                             "snippet": page.summary[:200]
                         })
-                    except:
-                        pass
+                    except Exception as inner_e:
+                        if verbose:
+                            print(f"[Wikipedia] 处理第一个选项时出错: {str(inner_e)}")
             except Exception as e:
                 if verbose:
                     print(f"[Wikipedia] 获取页面 {title} 时出错: {str(e)}")
@@ -412,7 +411,7 @@ def search_category(category, query, max_results=5, engine="duckduckgo", verbose
             print(f"[分类搜索] 政策类别: 搜索USTR...")
         results.extend(search_engine(query, engine, site="ustr.gov", max_results=max_results//2, verbose=verbose))
         if verbose:
-            print(f"[分类搜索] 政策类别: 搜索Reuters...")
+            print(f"[分类搜索] 政策类别: 搜索路透社...")
         results.extend(search_engine(query, engine, site="reuters.com", max_results=max_results//2, verbose=verbose))
     elif category == "general":
         if verbose:

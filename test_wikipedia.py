@@ -1,6 +1,6 @@
 # 测试Wikipedia搜索功能
 import sys
-sys.path.append('c:\\work\\github\\deepsearch_demo')
+sys.path.append('c:\\work\\github\\search-demo\\search-demo')
 from search import search_wikipedia
 
 # 使用verbose模式测试搜索功能
