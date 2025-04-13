@@ -16,13 +16,59 @@ class SearchEngine:
     def __init__(self, verbose=False):
         self.verbose = verbose
     
-    def search(self, query, max_results=5, **kwargs):
-        """搜索方法，子类必须实现"""
+    def search(self, query, max_results=5, format='json', **kwargs):
+        """搜索方法，子类必须实现
+        
+        Args:
+            query: 搜索关键词
+            max_results: 最大结果数
+            format: 输出格式，支持'json'、'markdown'、'html'
+            **kwargs: 其他搜索参数
+        """
+        results = self._search_impl(query, max_results, **kwargs)
+        return self._format_results(results, format)
+    
+    def _search_impl(self, query, max_results, **kwargs):
+        """实际搜索实现，子类必须实现"""
         raise NotImplementedError
+    
+    def _format_results(self, results, format):
+        """格式化搜索结果"""
+        if format == 'json':
+            return json.dumps(results, indent=2, ensure_ascii=False)
+        elif format == 'markdown':
+            return self._to_markdown(results)
+        elif format == 'html':
+            return self._to_html(results)
+        else:
+            return results
+    
+    def _to_markdown(self, results):
+        """转换为Markdown格式"""
+        output = []
+        for result in results:
+            output.append(f"### {result['title']}\n")
+            output.append(f"- 来源: {result['source']}\n")
+            output.append(f"- 链接: [{result['link']}]({result['link']})\n")
+            output.append(f"- 摘要: {result['snippet']}\n\n")
+        return '\n'.join(output)
+    
+    def _to_html(self, results):
+        """转换为HTML格式"""
+        output = ['<div class="search-results">']
+        for result in results:
+            output.append(f"<div class='result'>")
+            output.append(f"<h3>{result['title']}</h3>")
+            output.append(f"<p><strong>来源:</strong> {result['source']}</p>")
+            output.append(f"<p><strong>链接:</strong> <a href='{result['link']}'>{result['link']}</a></p>")
+            output.append(f"<p><strong>摘要:</strong> {result['snippet']}</p>")
+            output.append("</div>")
+        output.append("</div>")
+        return '\n'.join(output)
 
 class ArxivSearchEngine(SearchEngine):
     """arXiv搜索引擎实现"""
-    def search(self, query, max_results=5, **kwargs):
+    def _search_impl(self, query, max_results=5, **kwargs):
         if self.verbose:
             print(f"\n[arXiv] 开始搜索: {query}")
         try:
@@ -48,7 +94,7 @@ class WikipediaSearchEngine(SearchEngine):
         self.lang = lang
         wikipedia.set_lang(lang)
     
-    def search(self, query, max_results=5, **kwargs):
+    def _search_impl(self, query, max_results=5, **kwargs):
         if self.verbose:
             print(f"\n[Wikipedia] 开始搜索: {query}")
         try:
@@ -137,7 +183,7 @@ class DuckDuckGoSearchEngine(SearchEngine):
             
         return query
     
-    def search(self, query, max_results=5, **kwargs):
+    def _search_impl(self, query, max_results=5, **kwargs):
         if self.verbose:
             print(f"\n[DuckDuckGo] 开始搜索: {query}")
         try:
@@ -223,7 +269,7 @@ class GoogleSearchEngine(SearchEngine):
             
         return query
     
-    def search(self, query, max_results=5, **kwargs):
+    def _search_impl(self, query, max_results=5, **kwargs):
         if self.verbose:
             print(f"\n[Google] 开始搜索: {query}")
         try:
