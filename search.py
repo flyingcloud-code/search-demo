@@ -191,7 +191,7 @@ def search_scholar(query, max_results=5, verbose=False):
             print(f"[Google Scholar] 详细错误信息: {str(e)}")
         return []
 
-def search_engine(query, engine="duckduckgo", site=None, filetype=None, inurl=None, intitle=None, intext=None,
+def search_engine(query, engine="google", site=None, filetype=None, inurl=None, intitle=None, intext=None,
                  allinurl=None, allintitle=None, allintext=None, before=None, after=None, max_results=5, verbose=False):
     """通用搜索，支持 DuckDuckGo 和 Google"""
     if verbose:
@@ -299,8 +299,15 @@ def search_engine(query, engine="duckduckgo", site=None, filetype=None, inurl=No
                 # 在新版本中，结果是字符串而不是对象
                 if isinstance(result, str):
                     url = result
-                    title = "无标题"  # 无法从字符串获取标题
-                    description = "无摘要"  # 无法从字符串获取描述
+                    try:
+                        response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+                        soup = BeautifulSoup(response.text, 'html.parser')
+                        title = soup.title.string if soup.title else "无标题"
+                        description = soup.find("meta", attrs={"name": "description"})
+                        description = description["content"][:200] if description else "无摘要"
+                    except Exception:
+                        title = "无标题"
+                        description = "无摘要"
                     if verbose:
                         print(f"[Google] 结果为字符串格式: {url[:50]}...")
                 else:
@@ -496,7 +503,7 @@ def main():
     parser.add_argument("--query", required=True, help="搜索查询")
     parser.add_argument("--category", choices=CATEGORY_RESOURCES.keys(), help="强制指定搜索类别")
     parser.add_argument("--include-general", action="store_true", help="在类别搜索外附加通用搜索")
-    parser.add_argument("--engine", choices=["duckduckgo", "google"], default="duckduckgo",
+    parser.add_argument("--engine", choices=["duckduckgo", "google"], default="google",
                         help="通用搜索引擎（默认：duckduckgo）")
     parser.add_argument("--top-n", type=int, default=5, help="返回结果数量")
     parser.add_argument("--format", choices=["json", "markdown", "html"], default="json", help="输出格式")
